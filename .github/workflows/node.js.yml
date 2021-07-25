@@ -1,0 +1,49 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x, 16.x]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Cache
+        uses: actions/cache@v2.1.0
+        id: yarn-cache
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+            ${{ runner.os }}-
+      - run: yarn install
+        name: Install Dependences
+
+      - run: yarn build
+        name: Run TypeScript Check
+
+      - run: yarn test
+        name: Run Test
+
+      - run: yarn test --coverage
+        name: Run coverage
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@v1.1.2
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
